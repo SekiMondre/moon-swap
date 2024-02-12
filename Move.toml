@@ -4,6 +4,8 @@ version = "1.0.0"
 authors = []
 
 [addresses]
+moon_swap = "fed280540039628131159b934ad347af1dd0054b06e623392d863c5e2d61bb38"
+moon_swap_resource = "0x7146b2100993d533b127f771e9d9272bfb5f73fa94126fd9b00e5f159f95e3b8"
 
 [dev-addresses]
 
