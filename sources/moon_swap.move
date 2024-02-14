@@ -4,11 +4,16 @@ module moon_swap::moon_swap {
     use std::string;
     use aptos_framework::account;
     use aptos_framework::resource_account;
+    use aptos_framework::coin::{Self, Coin};
     // use aptos_framework::timestamp;
 
     struct LPToken<phantom X, phantom Y> {}
 
-    struct LiquidityPool<X, Y> {
+    struct LiquidityPool<phantom X, phantom Y> has key {
+        reserve_x: Coin<X>,
+        reserve_y: Coin<Y>,
+        mint_cap: coin::MintCapability<LPToken<X,Y>>,
+        burn_cap: coin::BurnCapability<LPToken<X,Y>>,
     }
 
     struct SwapInfo has key {
@@ -25,7 +30,38 @@ module moon_swap::moon_swap {
         move_to(admin, config);
     }
 
-    // make pool
+    public fun start_liquidity_Pool<X,Y>() acquires SwapInfo {
+        assert!(coin::is_coin_initialized<X>() && coin::is_coin_initialized<Y>(), ERROR_GENERIC);
+
+        let info = borrow_global_mut<SwapInfo>(@moon_swap_resource);
+        let resource_account = account::create_signer_with_capability(&info.signer_cap);
+        let resource_address = account::get_signer_capability_address(&info.signer_cap);
+
+        assert!(!exists<LiquidityPool<X,Y>>(resource_address), ERROR_GENERIC);
+
+        coin::register<LPToken<X,Y>>(&resource_account);
+
+        // TODO: make names from X,Y types
+        let name = string::utf8(b"<SAMPLE NAME>");
+        let symbol = string::utf8(b"TKX-TKY");
+
+        let (burn_cap, freeze_cap, mint_cap) = coin::initialize<LPToken<X,Y>>(
+            &resource_account,
+            name,
+            symbol,
+            8, // declare constant?
+            true
+        );
+        coin::destroy_freeze_cap(freeze_cap);
+
+        let lp = LiquidityPool {
+            reserve_x: coin::zero<X>(),
+            reserve_y: coin::zero<Y>(),
+            mint_cap,
+            burn_cap,
+        };
+        move_to(&resource_account, lp);
+    }
 
     // deposit
 
